@@ -9,7 +9,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @AllArgsConstructor
 @RestController
@@ -28,6 +30,11 @@ public class PatientController {
     @GetMapping("/{patientMPI}")
     public Patient getPatientByMPI(@PathVariable String patientMPI) {
         return patientService.getPatientByMPI(patientMPI);
+    }
+
+    @PostMapping("/all")
+    public Map<String, LocalDate> getAllPatientsByMPI(@RequestBody List<String> MPIList) {
+        return patientService.getAllPatientsByMPI(MPIList);
     }
 
     @PostMapping()

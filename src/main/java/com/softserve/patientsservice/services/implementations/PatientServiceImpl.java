@@ -9,7 +9,10 @@ import lombok.AllArgsConstructor;
 import lombok.extern.java.Log;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @AllArgsConstructor
@@ -27,6 +30,17 @@ public class PatientServiceImpl implements PatientService {
     public Patient getPatientByMPI(String MPI) {
         return patientRepository.findById(MPI)
                 .orElseThrow(() -> new CustomEntityNotFoundException(Patient.class));
+    }
+
+    @Override
+    public Map<String, LocalDate> getAllPatientsByMPI(List<String> MPI) {
+        List<Patient> patients = (List<Patient>) patientRepository.findAllById(MPI);
+        Map<String, LocalDate> patientsData = new HashMap<>();
+
+        for (Patient patient : patients) {
+            patientsData.put(patient.getMpi(), patient.getDateOfBirth());
+        }
+        return patientsData;
     }
 
     @Override
