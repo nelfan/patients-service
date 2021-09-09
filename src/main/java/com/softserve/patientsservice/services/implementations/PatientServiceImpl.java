@@ -54,4 +54,9 @@ public class PatientServiceImpl implements PatientService {
             throw new CustomFailedToDeleteEntityException(Patient.class);
         }
     }
+
+    @Override
+    public int deactivatePatientByMPI(String MPI) {
+        return patientRepository.customDeactivatePatientByMPI(MPI);
+    }
 }

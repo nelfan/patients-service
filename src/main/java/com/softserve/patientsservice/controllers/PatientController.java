@@ -58,4 +58,13 @@ public class PatientController {
 
         return new ResponseEntity<>("Patient was removed successfully", HttpStatus.OK);
     }
+
+    @PutMapping("/{patientMPI}")
+    public ResponseEntity<String> deactivatePatientByMPI(@PathVariable String patientMPI) {
+        if (patientService.deactivatePatientByMPI(patientMPI) == 1) {
+            return new ResponseEntity<>("Patient was deactivated successfully", HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>("Unable to deactivate. Patient not found", HttpStatus.NOT_FOUND);
+        }
+    }
 }
