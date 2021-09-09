@@ -9,6 +9,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface PatientRepository extends SpannerRepository<Patient, String> {
 
-@Query(value = "UPDATE PATIENTS SET IS_ACTIVE=false WHERE MASTER_PATIENT_IDENTIFIER = @MPI", dmlStatement = true)
+@Query(value = "UPDATE PATIENTS SET IS_ACTIVE=false WHERE MASTER_PATIENT_IDENTIFIER = @MPI AND IS_ACTIVE=true", dmlStatement = true)
 int customDeactivatePatientByMPI(@Param("MPI") String MPI);
 }
