@@ -1,0 +1,19 @@
+server:
+  port: 8086
+
+spring:
+  cloud:
+    gcp:
+      spanner:
+        database: ${DB}
+        instance-id: ${INSTANCE_ID}
+        project-id: ${PROJECT_ID}
+
+
+  kafka:
+    consumer:
+      auto-offset-reset: earliest
+      bootstrap-servers: localhost:9092
+      group-id: mygroup
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
