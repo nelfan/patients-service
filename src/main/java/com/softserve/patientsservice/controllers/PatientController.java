@@ -3,9 +3,9 @@ package com.softserve.patientsservice.controllers;
 import com.softserve.patientsservice.domain.dto.PatientDTO;
 import com.softserve.patientsservice.domain.enities.Patient;
 import com.softserve.patientsservice.domain.mappers.PatientMapper;
-import com.softserve.patientsservice.services.PatientProducer;
 import com.softserve.patientsservice.services.PatientService;
 import lombok.AllArgsConstructor;
+import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +21,7 @@ public class PatientController {
 
     private final PatientMapper patientMapper;
 
-    private final PatientProducer patientProducer;
+    private final StreamBridge streamBridge;
 
     @GetMapping
     public List<Patient> getAll() {
@@ -65,7 +65,7 @@ public class PatientController {
     @PutMapping("/{patientMPI}")
     public ResponseEntity<String> deactivatePatientByMPI(@PathVariable String patientMPI) {
         if (patientService.deactivatePatientByMPI(patientMPI) == 1) {
-            patientProducer.produce("Patient-deactivation-event", patientMPI);
+            streamBridge.send("deactivatePatientByMPI-out-0", patientMPI);
             return new ResponseEntity<>("Patient was deactivated successfully", HttpStatus.OK);
         } else {
             return new ResponseEntity<>("Unable to deactivate. Patient not found or already deactivated", HttpStatus.NOT_FOUND);

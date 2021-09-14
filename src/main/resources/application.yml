@@ -3,6 +3,11 @@ server:
 
 spring:
   cloud:
+    stream:
+      source: deactivatePatientByMPI
+      bindings:
+        deactivatePatientByMPI-out-0:
+          destination: Patient-deactivation-event
     gcp:
       spanner:
         database: ${DB}
