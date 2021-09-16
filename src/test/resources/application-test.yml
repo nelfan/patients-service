@@ -1,0 +1,10 @@
+spring:
+  cloud:
+    stream:
+      kafka:
+        binder:
+          brokers: localhost:9092
+      source: deactivatePatientByMPI
+      bindings:
+        deactivatePatientByMPI-out-0:
+          destination: Patient-deactivation-event
