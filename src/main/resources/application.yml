@@ -3,17 +3,16 @@ server:
 
 spring:
   cloud:
+    stream:
+      kafka:
+        binder:
+          brokers: localhost:9092
+      source: deactivatePatientByMPI
+      bindings:
+        deactivatePatientByMPI-out-0:
+          destination: Patient-deactivation-event
     gcp:
       spanner:
         database: ${DB}
         instance-id: ${INSTANCE_ID}
         project-id: ${PROJECT_ID}
-
-
-  kafka:
-    consumer:
-      auto-offset-reset: earliest
-      bootstrap-servers: localhost:9092
-      group-id: mygroup
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer

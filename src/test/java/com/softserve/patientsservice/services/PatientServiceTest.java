@@ -3,22 +3,46 @@ package com.softserve.patientsservice.services;
 import com.softserve.patientsservice.domain.enities.Patient;
 import com.softserve.patientsservice.repositories.PatientRepository;
 import com.softserve.patientsservice.services.implementations.PatientServiceImpl;
-import com.softserve.patientsservice.utils.exceptions.CustomEntityNotFoundException;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.serialization.StringDeserializer;
+import org.junit.ClassRule;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.cloud.stream.function.StreamBridge;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.junit4.SpringRunner;
+import org.testcontainers.containers.KafkaContainer;
+import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
+import org.testcontainers.utility.DockerImageName;
 
+import java.time.Duration;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
+@RunWith(SpringRunner.class)
+@SpringBootTest
+@DirtiesContext
+@ActiveProfiles("test")
 class PatientServiceTest {
 
     @Mock
@@ -27,10 +51,35 @@ class PatientServiceTest {
     @InjectMocks
     PatientServiceImpl patientService;
 
+    @Autowired
+    StreamBridge streamBridge;
+
+    private final String BINDING_OUT_DEACTIVATE_PATIENT_BY_MPI = "deactivatePatientByMPI-out-0";
+
+    @Value("${spring.cloud.stream.bindings." + BINDING_OUT_DEACTIVATE_PATIENT_BY_MPI + ".destination}")
+    private String deactivatePatientByMPITopic;
+
+
+    @ClassRule
+    public static KafkaContainer kafka = new KafkaContainer(DockerImageName
+            .parse("confluentinc/cp-kafka:5.4.3"));
+
+    @DynamicPropertySource
+    static void dynamicProperties(DynamicPropertyRegistry registry) {
+        kafka.start();
+        registry.add("spring.cloud.stream.kafka.binder.brokers",
+                kafka::getBootstrapServers);
+    }
+
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        patientService = new PatientServiceImpl(patientRepository);
+        patientService = new PatientServiceImpl(patientRepository, streamBridge);
+    }
+
+    @AfterAll()
+    static void tearDown() {
+        kafka.close();
     }
 
     @Test
@@ -132,5 +181,36 @@ class PatientServiceTest {
 
         assertEquals(isDeleted, true);
         verify(patientRepository, times(1)).deleteById(patient.getMpi());
+    }
+
+    @Test
+    void shouldDeactivatePatientByMPI() {
+        Patient patient = new Patient();
+        patient.setMpi("12345");
+
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(
+                ImmutableMap.of(
+                        ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers(),
+                        ConsumerConfig.GROUP_ID_CONFIG, "testGroup",
+                        ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest"
+                ),
+                new StringDeserializer(),
+                new StringDeserializer()
+        );
+
+        consumer.subscribe(Collections.singletonList(deactivatePatientByMPITopic));
+
+        when(patientRepository.customDeactivatePatientByMPI(patient.getMpi())).thenReturn(1);
+
+        streamBridge.send(BINDING_OUT_DEACTIVATE_PATIENT_BY_MPI, patient.getMpi());
+
+        ConsumerRecords<String, String> consumerRecords = consumer.poll(Duration.ofMillis(2000));
+
+        Assertions.assertEquals(1, consumerRecords.count());
+
+        consumerRecords.records(deactivatePatientByMPITopic).forEach(s ->
+                Assertions.assertEquals(patient.getMpi(), s.value()));
+
+        consumer.unsubscribe();
     }
 }

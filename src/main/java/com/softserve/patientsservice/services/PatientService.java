@@ -14,7 +14,7 @@ public interface PatientService {
 
     Patient update(Patient patient);
 
-    Boolean deletePatientByMPI(String MPI);
+    boolean deletePatientByMPI(String MPI);
 
-    int deactivatePatientByMPI(String MPI);
+    boolean deactivatePatientByMPI(String MPI);
 }
