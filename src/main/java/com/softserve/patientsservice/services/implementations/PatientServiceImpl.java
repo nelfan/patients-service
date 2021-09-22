@@ -7,6 +7,7 @@ import com.softserve.patientsservice.utils.exceptions.CustomEntityNotFoundExcept
 import com.softserve.patientsservice.utils.exceptions.CustomFailedToDeleteEntityException;
 import lombok.AllArgsConstructor;
 import lombok.extern.java.Log;
+import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,6 +18,8 @@ import java.util.List;
 public class PatientServiceImpl implements PatientService {
 
     private final PatientRepository patientRepository;
+
+    StreamBridge streamBridge;
 
     @Override
     public List<Patient> getAll() {
@@ -44,7 +47,7 @@ public class PatientServiceImpl implements PatientService {
     }
 
     @Override
-    public Boolean deletePatientByMPI(String MPI) {
+    public boolean deletePatientByMPI(String MPI) {
         try {
             getPatientByMPI(MPI);
             patientRepository.deleteById(MPI);
@@ -56,7 +59,12 @@ public class PatientServiceImpl implements PatientService {
     }
 
     @Override
-    public int deactivatePatientByMPI(String MPI) {
-        return patientRepository.customDeactivatePatientByMPI(MPI);
+    public boolean deactivatePatientByMPI(String MPI) {
+        if (patientRepository.customDeactivatePatientByMPI(MPI) == 1) {
+            streamBridge.send("deactivatePatientByMPI-out-0", MPI);
+            return true;
+        } else {
+            return false;
+        }
     }
 }
